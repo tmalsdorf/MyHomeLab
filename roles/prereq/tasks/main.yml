@@ -1,0 +1,21 @@
+- name: Setup prerequisites
+  hosts: localhost  # or whichever hosts you intend to target
+  connection: local
+  tasks:
+    - name: Include SSH keys tasks
+      include_tasks: sshkeys.yml
+
+    - name: Include sudoers tasks
+      include_tasks: sudoer.yml
+
+#    - name: Include copy hostnames tasks
+#      include_tasks: copy_hostnames.yml
+
+    - name: Include install packages tasks
+      include_tasks: install_packages.yml
+
+    - name: Include install kubectl tasks
+      include_tasks: install_kubectl.yml
+
+    - name: Include install k3sup tasks
+      include_tasks: install_k3sup.yml
