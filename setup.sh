@@ -20,6 +20,23 @@ add_hosts() {
     done
 }
 
+# Function to add a section if it doesn't exist
+add_section_if_not_exists() {
+    local section="$1"
+    local content="$2"
+    local file="$3"
+
+    # Check if the file contains the unique identifier of the section you want to add/ensure exists
+    if ! grep -qF "$section" "$file"; then
+        # If the unique identifier isn't found, append the required lines to the file
+        echo -e "\n$content" >> "$file"
+        echo "Added section $section to $file."
+    else
+        echo "The section $section already exists in $file."
+    fi
+}
+
+
 # Function to check if user can sudo without a password
 can_passwordless_sudo() {
     sudo -ln 2>&1 | grep -q '(ALL) NOPASSWD: ALL'
@@ -86,6 +103,7 @@ retrieve_k3s_cluster_config() {
         --local-path ~/.kube/config \
         --ssh-key ~/.ssh/id_rsa
 }
+
 
 # Source the .env file if it exists
 if [ -f .env ]; then
@@ -205,13 +223,42 @@ if [ "${K3S_ENABLED}" == "true" ]; then
     if [ ! -f "${INVENTORY_FILE}" ]; then
         touch "${INVENTORY_FILE}"
     fi
+    # Define localhost
+    # Define local section 
+    REQUIRED_LOCAL_SECTION="[local]\nlocalhost ansible_connection=local ansible_user=${K3S_USERNAME}"
+    # Ensure the [local] section is present
+    echo "Checking and creating [local] section... ${REQUIRED_LOCAL_SECTION}"
+    add_section_if_not_exists "[local]" "$REQUIRED_LOCAL_SECTION" "${INVENTORY_FILE}"
+
     # Check if K3S_MASTERS and K3S_NODES are not empty, and then update the inventory file accordingly
     if [ -n "${K3S_MASTERS}" ]; then
-        add_hosts "masters" "${K3S_MASTERS}"
+        add_hosts "master" "${K3S_MASTERS}"
     fi
     if [ -n "${K3S_NODES}" ]; then
-        add_hosts "nodes" "${K3S_NODES}"
+        add_hosts "node" "${K3S_NODES}"
     fi
+    
+    # Check if the K3s Cluster is defined 
+    # Define the second section you want to ensure is present in the file
+    REQUIRED_CLUSTER_SECTION="[k3s_cluster:children]\nmaster\nnode"
+    # Ensure the [k3s_cluster:children] section is present
+    echo "Checking and creating [k3s_cluster:children] section... ${REQUIRED_CLUSTER_SECTION}"
+    add_section_if_not_exists "[k3s_cluster:children]" "$REQUIRED_CLUSTER_SECTION" "${INVENTORY_FILE}"
+
+    echo "ANSIBLE_INVENTORY_FILE created."
+    # Check and create ANSIBLE Group Vars if it doesn't exist
+    echo "Checking and creating ANSIBLE Group Vars..."
+    if [ ! -d "${ANSIBLE_INVENTORY_PATH}/group_vars" ]; then
+        mkdir -p "${ANSIBLE_INVENTORY_PATH}/group_vars"
+    fi
+    if [ ! -f "${ANSIBLE_INVENTORY_PATH}/group_vars/all.yml" ]; then
+        cp k3s-ansible/inventory/sample/group_vars/all.yml "${ANSIBLE_INVENTORY_PATH}/group_vars/all.yml" 
+    fi
+    echo "ANSIBLE Group Vars created."
+    # update Ansible User in Group Vars
+    echo "Updating Ansible User in Group Vars..."
+    sed -i "s/{{ ansible_user }}/${ANSIBLE_USER}/g" "${ANSIBLE_INVENTORY_PATH}/group_vars/all.yml"
+    echo "Ansible User updated in Group Vars."
     # Initialize K3s
     echo "Initializing K3s..."
     ansible-playbook -i "${ANSIBLE_INVENTORY_PATH}/${ANSIBLE_INVENTORY_FILE}" k3s-ansible/site.yml
@@ -219,12 +266,11 @@ if [ "${K3S_ENABLED}" == "true" ]; then
     echo "retrieving k3s cluster config..."
     # Extract the first IP address from K3S_MASTERS
     first_master_ip=$(echo $K3S_MASTERS | cut -d',' -f1)
-    retrieve_k3s_cluster_config "${$first_master_ip}" "${K3S_USER}" "${K3S_CONTEXT}"
+    retrieve_k3s_cluster_config "$first_master_ip" "${K3S_USERNAME}" "${K3S_CONTEXT}"
     echo "k3s cluster config retrieved."
     echo "exporting k3s cluster config..."
     export KUBECONFIG=~/.kube/config
     echo "k3s cluster config exported."
-
     kubectl config use-context "${K3S_CONTEXT}"
     echo "k3s cluster info:"
     kubectl cluster-info
