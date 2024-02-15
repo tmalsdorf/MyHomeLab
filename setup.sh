@@ -1,5 +1,92 @@
 #!/bin/bash
 
+# Function to add hosts to the inventory file
+add_hosts() {
+    local section=$1
+    local ips=(${2//,/ })
+    
+    # Check if the section exists, if not, add it
+    if ! grep -q "^\[${section}\]$" "${INVENTORY_FILE}"; then
+        echo "[${section}]" >> "${INVENTORY_FILE}"
+    fi
+
+    # Add IPs to the section if they're not already present
+    for ip in "${ips[@]}"; do
+        if ! grep -q "^${ip}$" "${INVENTORY_FILE}" -A1 | grep -q "^${ip}$"; then
+            echo "Adding ${ip} to [${section}]"
+            # Insert IPs before the next section starts or at the end of the file
+            sed -i "/^\[${section}\]$/a ${ip}" "${INVENTORY_FILE}"
+        fi
+    done
+}
+
+# Function to check if user can sudo without a password
+can_passwordless_sudo() {
+    sudo -ln 2>&1 | grep -q '(ALL) NOPASSWD: ALL'
+}
+
+# Function to verify or generate SSH keys
+verify_or_generate_ssh_key() {
+    local KEY_FILE="$1"
+
+    # Verify if the SSH key exists, and generate one if it does not
+    if [ ! -f "$KEY_FILE" ]; then
+        echo "SSH key does not exist, generating one..."
+        ssh-keygen -t rsa -b 2048 -f "$KEY_FILE" -N ""
+        echo "SSH key generated."
+    else
+        echo "SSH key already exists."
+    fi
+}
+
+# Function to copy SSH keys
+copy_ssh_key() {
+    local HOST="$1"
+    local SSH_DIR="$2"
+    local KEY_FILE="$3"
+
+    # Check if ssh-copy-id exists
+    if command -v ssh-copy-id &>/dev/null; then
+        echo "Using ssh-copy-id to copy the public key to $HOST..."
+        ssh-copy-id "$HOST"
+    else
+        # Fallback: Manually append the key if ssh-copy-id is not available
+        echo "ssh-copy-id not found, appending key manually..."
+        mkdir -p "$SSH_DIR"
+        cat "$KEY_FILE.pub" >> "$SSH_DIR/authorized_keys"
+        chmod 600 "$SSH_DIR/authorized_keys"
+        chmod 700 "$SSH_DIR"
+        echo "Public key appended to $SSH_DIR/authorized_keys."
+    fi
+}
+
+# Function to retrieve k3s cluster config
+retrieve_k3s_cluster_config() {
+    # Validate the number of arguments passed to the function
+    if [ "$#" -ne 3 ]; then
+        echo "Usage: install_k3s_cluster <master_ip> <master_user> <context>"
+        return 1
+    fi
+
+    local master_ip=$1
+    local master_user=$2
+    local context=$3
+
+    # Create the .kube directory and config file if they don't exist
+    mkdir -p ~/.kube
+    touch ~/.kube/config
+
+    # Execute k3sup install command with the provided arguments
+    k3sup install \
+        --user "$master_user" \
+        --skip-install \
+        --host "$master_ip" \
+        --context "$context" \
+        --merge \
+        --local-path ~/.kube/config \
+        --ssh-key ~/.ssh/id_rsa
+}
+
 # Source the .env file if it exists
 if [ -f .env ]; then
     source .env
@@ -42,12 +129,108 @@ source venv/bin/activate
 echo "Installing requirements..."
 pip install -r requirements.txt
 
+# check if passwordless SSH is already set up if not set it up
+HOST="localhost"
 
-if [ "$K3S_ENABLED" = true ]; then
+# First, attempt to connect to the host using SSH in batch mode
+ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
+
+# Check the exit status of the last command to determine if passwordless SSH is already set up
+if [ $? -eq 0 ]; then
+    echo "Passwordless SSH is already set up for $HOST."
+else
+    echo "Passwordless SSH is not set up for $HOST. Setting it up now..."
+    # Verify or generate SSH key
+    verify_or_generate_ssh_key "$KEY_FILE"
+    # Copy SSH key to the host
+    copy_ssh_key "$HOST" "$SSH_DIR" "$KEY_FILE"
+    # Attempt to connect again to confirm passwordless SSH setup
+    ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
+
+    if [ $? -eq 0 ]; then
+        echo "Passwordless SSH setup is successful for $HOST."
+    else
+        echo "Failed to set up passwordless SSH for $HOST. Please check for errors."
+    fi
+fi
+#
+
+# Check if the current user can perform passwordless sudo
+if can_passwordless_sudo; then
+    echo "This user can already sudo without a password."
+else
+    # Ask user if they want to set up passwordless sudo
+    read -p "Do you want to set up passwordless sudo for this user? (y/n) " answer
+    case $answer in
+        [Yy]* )
+            # Get the current user's username
+            CURRENT_USER=$(whoami)
+            # Define file path
+            SUDOERS_FILE="/etc/sudoers.d/$CURRENT_USER"
+            # Check if file already exists to avoid duplicate entries
+            if [ -f "$SUDOERS_FILE" ]; then
+                echo "A sudoers file for $CURRENT_USER already exists."
+            else
+                # Add passwordless sudo entry for the current user
+                echo "$CURRENT_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_FILE"
+                # Correct file permissions for security
+                chmod 0440 "$SUDOERS_FILE"
+                echo "Passwordless sudo set up for $CURRENT_USER."
+            fi
+            ;;
+        [Nn]* )
+            echo "No changes made."
+            ;;
+        * )
+            echo "Please answer yes or no."
+            ;;
+    esac
+fi
+
+# Check if K3s is enabled
+if [ "${K3S_ENABLED}" == "true" ]; then
     echo "K3s is enabled."
     ## Clone K3s Ansible Repo
     echo "Cloning K3s Ansible Repo..."
     git clone https://github.com/techno-tim/k3s-ansible.git  # Additional actions for configuring K3s can be added here
+    echo "K3s Ansible Repo cloned."
+    # Check and create ANSIBLE_INVENTORY_PATH directory if it doesn't exist
+    echo "Checking and creating ANSIBLE_INVENTORY_PATH directory..."
+    if [ ! -d "${ANSIBLE_INVENTORY_PATH}" ]; then
+        mkdir -p "${ANSIBLE_INVENTORY_PATH}"
+    fi
+    # Check and create ANSIBLE_INVENTORY_FILE if it doesn't exist
+    echo "Checking and creating ANSIBLE_INVENTORY_FILE..."
+    INVENTORY_FILE="${ANSIBLE_INVENTORY_PATH}/${ANSIBLE_INVENTORY_FILE}"
+    if [ ! -f "${INVENTORY_FILE}" ]; then
+        touch "${INVENTORY_FILE}"
+    fi
+    # Check if K3S_MASTERS and K3S_NODES are not empty, and then update the inventory file accordingly
+    if [ -n "${K3S_MASTERS}" ]; then
+        add_hosts "masters" "${K3S_MASTERS}"
+    fi
+    if [ -n "${K3S_NODES}" ]; then
+        add_hosts "nodes" "${K3S_NODES}"
+    fi
+    # Initialize K3s
+    echo "Initializing K3s..."
+    ansible-playbook -i "${ANSIBLE_INVENTORY_PATH}/${ANSIBLE_INVENTORY_FILE}" k3s-ansible/site.yml
+    echo "K3s initialized."
+    echo "retrieving k3s cluster config..."
+    # Extract the first IP address from K3S_MASTERS
+    first_master_ip=$(echo $K3S_MASTERS | cut -d',' -f1)
+    retrieve_k3s_cluster_config "${$first_master_ip}" "${K3S_USER}" "${K3S_CONTEXT}"
+    echo "k3s cluster config retrieved."
+    echo "exporting k3s cluster config..."
+    export KUBECONFIG=~/.kube/config
+    echo "k3s cluster config exported."
+
+    kubectl config use-context "${K3S_CONTEXT}"
+    echo "k3s cluster info:"
+    kubectl cluster-info
+    echo "k3s nodes:"
+    kubectl get nodes -o wide
+
 else
     echo "K3s is not enabled."
 fi
