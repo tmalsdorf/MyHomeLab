@@ -5,5 +5,8 @@
   become: true
   roles:
     - role: prereq
+    - role: k3s
+      when: lookup('env', 'K3S_ENABLED') == 'true'
+
       
 

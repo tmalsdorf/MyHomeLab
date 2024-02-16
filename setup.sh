@@ -147,63 +147,66 @@ source venv/bin/activate
 echo "Installing requirements..."
 pip install -r requirements.txt
 
-# check if passwordless SSH is already set up if not set it up
-HOST="localhost"
+echo "Initializing localhost..."
+ansible-playbook homelab.yml
 
-# First, attempt to connect to the host using SSH in batch mode
-ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
+# # check if passwordless SSH is already set up if not set it up
+# HOST="localhost"
 
-# Check the exit status of the last command to determine if passwordless SSH is already set up
-if [ $? -eq 0 ]; then
-    echo "Passwordless SSH is already set up for $HOST."
-else
-    echo "Passwordless SSH is not set up for $HOST. Setting it up now..."
-    # Verify or generate SSH key
-    verify_or_generate_ssh_key "$KEY_FILE"
-    # Copy SSH key to the host
-    copy_ssh_key "$HOST" "$SSH_DIR" "$KEY_FILE"
-    # Attempt to connect again to confirm passwordless SSH setup
-    ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
+# # First, attempt to connect to the host using SSH in batch mode
+# ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
 
-    if [ $? -eq 0 ]; then
-        echo "Passwordless SSH setup is successful for $HOST."
-    else
-        echo "Failed to set up passwordless SSH for $HOST. Please check for errors."
-    fi
-fi
-#
+# # Check the exit status of the last command to determine if passwordless SSH is already set up
+# if [ $? -eq 0 ]; then
+#     echo "Passwordless SSH is already set up for $HOST."
+# else
+#     echo "Passwordless SSH is not set up for $HOST. Setting it up now..."
+#     # Verify or generate SSH key
+#     verify_or_generate_ssh_key "$KEY_FILE"
+#     # Copy SSH key to the host
+#     copy_ssh_key "$HOST" "$SSH_DIR" "$KEY_FILE"
+#     # Attempt to connect again to confirm passwordless SSH setup
+#     ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$HOST" exit &>/dev/null
 
-# Check if the current user can perform passwordless sudo
-if can_passwordless_sudo; then
-    echo "This user can already sudo without a password."
-else
-    # Ask user if they want to set up passwordless sudo
-    read -p "Do you want to set up passwordless sudo for this user? (y/n) " answer
-    case $answer in
-        [Yy]* )
-            # Get the current user's username
-            CURRENT_USER=$(whoami)
-            # Define file path
-            SUDOERS_FILE="/etc/sudoers.d/$CURRENT_USER"
-            # Check if file already exists to avoid duplicate entries
-            if [ -f "$SUDOERS_FILE" ]; then
-                echo "A sudoers file for $CURRENT_USER already exists."
-            else
-                # Add passwordless sudo entry for the current user
-                echo "$CURRENT_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_FILE"
-                # Correct file permissions for security
-                chmod 0440 "$SUDOERS_FILE"
-                echo "Passwordless sudo set up for $CURRENT_USER."
-            fi
-            ;;
-        [Nn]* )
-            echo "No changes made."
-            ;;
-        * )
-            echo "Please answer yes or no."
-            ;;
-    esac
-fi
+#     if [ $? -eq 0 ]; then
+#         echo "Passwordless SSH setup is successful for $HOST."
+#     else
+#         echo "Failed to set up passwordless SSH for $HOST. Please check for errors."
+#     fi
+# fi
+# #
+
+# # Check if the current user can perform passwordless sudo
+# if can_passwordless_sudo; then
+#     echo "This user can already sudo without a password."
+# else
+#     # Ask user if they want to set up passwordless sudo
+#     read -p "Do you want to set up passwordless sudo for this user? (y/n) " answer
+#     case $answer in
+#         [Yy]* )
+#             # Get the current user's username
+#             CURRENT_USER=$(whoami)
+#             # Define file path
+#             SUDOERS_FILE="/etc/sudoers.d/$CURRENT_USER"
+#             # Check if file already exists to avoid duplicate entries
+#             if [ -f "$SUDOERS_FILE" ]; then
+#                 echo "A sudoers file for $CURRENT_USER already exists."
+#             else
+#                 # Add passwordless sudo entry for the current user
+#                 echo "$CURRENT_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_FILE"
+#                 # Correct file permissions for security
+#                 chmod 0440 "$SUDOERS_FILE"
+#                 echo "Passwordless sudo set up for $CURRENT_USER."
+#             fi
+#             ;;
+#         [Nn]* )
+#             echo "No changes made."
+#             ;;
+#         * )
+#             echo "Please answer yes or no."
+#             ;;
+#     esac
+# fi
 
 # Check if K3s is enabled
 if [ "${K3S_ENABLED}" == "true" ]; then

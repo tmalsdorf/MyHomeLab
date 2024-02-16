@@ -14,14 +14,14 @@ My HomeLab is built on a variety of hardware to support different functions, fro
 - **NAS**: Synology unit serving as centralized storage solution for backups, media, and personal files.
 - **Raspberry Pi's**: Used for lightweight computing tasks, IoT projects, and as kubernetes hosts.
 - **Dell Optiplexes**: Used kubernetes hosts.
-- **Dell Precision**: High-performance workstations for intensive computing tasks, virtualization, and AI projects.
+- **Dell Precision**: High-performance workstation for intensive computing tasks, virtualization, and AI projects.
 
 ## Infrastructure Software
 
 The backbone of the HomeLab is supported by several key software solutions that facilitate containerization, orchestration, and automation.
 
 - **Docker**: Containerization platform for building, deploying, and managing containerized applications.
-- **Portainer**: GUI for managing Docker environments, simplifying container deployment and monitoring.
+- **Portainer**: GUI for managing Docker/Kubernetes environments, simplifying container deployment and monitoring.
 - **Kubernetes**: Container orchestration system for automating application deployment, scaling, and management.
 - **Ansible**: Automation tool for provisioning, configuration management, and application deployment.
 
