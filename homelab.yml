@@ -1,5 +1,5 @@
 ---
-- name: Homelab Setup localhost
+- name: Homelab Setup 
   hosts: localhost
   gather_facts: true
   become: true
@@ -7,6 +7,15 @@
     - role: prereq
     - role: k3s
       when: lookup('env', 'K3S_ENABLED') == 'true'
+    - role: transmission
+      when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
+    - role: jackett
+      when: lookup('env', 'JACKETT_ENABLED') == 'true'
+    - role: radarr
+      when: lookup('env', 'RADARR_ENABLED') == 'true'
+    - role: sonarr
+      when: lookup('env', 'SONARR_ENABLED') == 'true'
+    
 
       
 
