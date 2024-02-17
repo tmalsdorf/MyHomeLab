@@ -1,0 +1,14 @@
+---
+# - name: Printing all the environment​ variables in Ansible transmission
+#   debug:
+#     msg: "{{ ansible_env }}"
+#     #msg: "{{ lookup('env','MYGLOBAL','HOME','SHELL') }}"
+
+- name: 44 Debug transmission_namespace variable
+  debug:
+    var: transmission_namespace 
+
+- name: Check if Namespace Exists
+  include_tasks: create_namespace.yml
+ 
+  

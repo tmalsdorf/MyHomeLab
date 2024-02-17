@@ -1,15 +1,28 @@
 ---
-- name: Check if 'MediaMaven' Namespace Exists
-  community.kubernetes.k8s_info:
-    api_version: v1
+- name: Check if the Kubernetes namespace exists
+  k8s_info:
     kind: Namespace
-    name: "MediaMaven"
-  register: ns
+    name: "{{ transmission_namespace }}"
+  register: namespace_result
 
-- name: Create 'MediaMaven' Namespace if it does not exist
-  community.kubernetes.k8s:
+#- name: Debug namespace result
+#  debug:
+#    var: namespace_result
+
+- name: Check if target namespace exists
+  set_fact:
+    namespace_exists: "{{ namespace_result.resources | json_query(query) | length > 0 }}"
+  vars:
+    query: "[?metadata.name=='{{ transmission_namespace }}']"
+
+- name: 33 Debug transmission_namespace variable
+  debug:
+    var: transmission_namespace
+
+- name: Create the namespace if it does not exist
+  k8s:
+    name: "{{ transmission_namespace }}"
     api_version: v1
     kind: Namespace
-    name: "MediaMaven"
     state: present
-  when: ns.resources | length == 0
+  when: not namespace_exists

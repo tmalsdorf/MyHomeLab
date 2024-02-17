@@ -1,3 +1,25 @@
+# # read the env file and decode it
+# - name: Read .env file
+#   ansible.builtin.slurp:
+#     src: ".env"
+#   register: env_file_content
+
+# - name: Decode .env file content
+#   ansible.builtin.set_fact:
+#     env_vars: "{{ (env_file_content.content | b64decode).splitlines() }}"
+
+# - name: Print all env vars (for debugging)
+#   ansible.builtin.debug:
+#     msg: "{{ item }}"
+#   loop: "{{ env_vars }}"
+#   when: item != '' and not item.startswith('#')
+
+# - name: Set environment variables as facts
+#   ansible.builtin.set_fact:
+#     "{{ item.split('=')[0] }}": "{{ item.split('=')[1] }}"
+#   loop: "{{ env_vars }}"
+#   when: item != '' and not item.startswith('#')
+
 - name: Include SSH keys tasks
   include_tasks: sshkeys.yml
 
@@ -9,4 +31,10 @@
 
 - name: Include install packages tasks
   include_tasks: install_packages.yml
+
+# - name: Printing all the environment​ variables in Ansible prereq
+#   debug:
+#     msg: "{{ ansible_env }}"
+#     #msg: "{{ lookup('env','MYGLOBAL','HOME','SHELL') }}"
+
 

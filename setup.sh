@@ -148,6 +148,9 @@ echo "Installing requirements..."
 pip install -r requirements.txt
 
 echo "Initializing localhost..."
+if [ "${K3S_ENABLED}" == "true" ]; then
+  ansible-galaxy collection install kubernetes.core
+fi
 ansible-playbook homelab.yml
 
 # # check if passwordless SSH is already set up if not set it up

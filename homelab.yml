@@ -2,12 +2,19 @@
 - name: Homelab Setup 
   hosts: localhost
   gather_facts: true
-  become: true
+  # tasks:
+  # - name: Homelab Printing all the environment​ variables in Ansible
+  #   debug:
+  #     msg: "{{ ansible_env }}"
+    
   roles:
     - role: prereq
+      become: true
     - role: k3s
+      become: true
       when: lookup('env', 'K3S_ENABLED') == 'true'
     - role: transmission
+      become: false
       when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
     - role: jackett
       when: lookup('env', 'JACKETT_ENABLED') == 'true'
