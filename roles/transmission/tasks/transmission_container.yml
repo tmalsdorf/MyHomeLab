@@ -1,0 +1,55 @@
+- name: Deploy Transmission
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: transmission
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: transmission
+        template:
+          metadata:
+            labels:
+              app: transmission
+          spec:
+            securityContext:
+              runAsUser: 1026
+              runAsGroup: 1026
+            containers:
+            - name: transmission
+              image: "{{ transmission_image }}"
+              ports:
+                - containerPort: 9091
+                - containerPort: 51413
+                # Ensure the UDP port is correctly specified
+                - name: udp-port
+                  containerPort: 51413
+                  protocol: UDP
+              env:
+                - name: PUID
+                  value: "{{ transmission_puid }}"
+                - name: PGID
+                  value: "{{ transmission_pgid }}"
+                - name: TZ
+                  value: "{{ transmission_tz }}"
+                - name: USER
+                  value: "{{ transmission_user }}"
+                - name: PASS
+                  value: "{{ transmission_password }}"
+              volumeMounts:
+                - name: config
+                  mountPath: "/config"
+                - name: downloads
+                  mountPath: "/downloads"
+            volumes:
+              - name: config
+                persistentVolumeClaim:
+                  claimName: transmission-config-pvc
+              - name: downloads
+                persistentVolumeClaim:
+                  claimName: transmission-downloads-pvc

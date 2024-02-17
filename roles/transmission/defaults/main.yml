@@ -18,3 +18,4 @@ transmission_lpd_enabled: "{{ lookup('env', 'TRANSMISSION_LPD_ENABLED') | defaul
 transmission_config: "{{ lookup('env', 'TRANSMISSION_CONFIG') | default('', true) }}"
 transmission_downloads: "{{ lookup('env', 'TRANSMISSION_DOWNLOADS') | default('', true) }}"
 transmission_watch: "{{ lookup('env', 'TRANSMISSION_WATCH') | default('', true) }}"
+transmission_storage_nfs_server_ip: "{{ lookup('env', 'TRANSMISSION_STORAGE_NFS_SERVER_IP') | default('', true) }}"

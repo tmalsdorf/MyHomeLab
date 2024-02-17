@@ -1,28 +1,142 @@
 ---
-- name: Homelab Setup 
+- name: Homelab localhost Setup elevated privledges
   hosts: localhost
   gather_facts: true
   # tasks:
   # - name: Homelab Printing all the environment​ variables in Ansible
   #   debug:
   #     msg: "{{ ansible_env }}"
-    
   roles:
     - role: prereq
       become: true
     - role: k3s
       become: true
       when: lookup('env', 'K3S_ENABLED') == 'true'
-    - role: transmission
-      become: false
-      when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
-    - role: jackett
-      when: lookup('env', 'JACKETT_ENABLED') == 'true'
-    - role: radarr
-      when: lookup('env', 'RADARR_ENABLED') == 'true'
-    - role: sonarr
-      when: lookup('env', 'SONARR_ENABLED') == 'true'
-    
 
-      
+- name: Set global condition based on K3S_ENABLED environment variable
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Determine if K3S is enabled
+      set_fact:
+        k3s_enabled: "{{ lookup('env', 'K3S_ENABLED') == 'true' }}"
+      run_once: true
+
+- name: Prepare Proxmox cluster
+  hosts: proxmox
+  gather_facts: true
+  become: true
+  environment: "{{ proxy_env | default({}) }}"
+  roles:
+    - role: techno_tim.k3s_ansible.proxmox_lxc
+      when: k3s_enabled and proxmox_lxc_configure
+
+- name: Prepare k3s nodes
+  hosts: k3s_cluster
+  gather_facts: true
+  environment: "{{ proxy_env | default({}) }}"
+  become: true
+  roles:
+    - role: techno_tim.k3s_ansible.lxc
+      when: k3s_enabled and proxmox_lxc_configure
+    - role: techno_tim.k3s_ansible.prereq
+      when: k3s_enabled
+    - role: techno_tim.k3s_ansible.download
+      when: k3s_enabled
+    - role: techno_tim.k3s_ansible.raspberrypi
+      when: k3s_enabled
+    - role: techno_tim.k3s_ansible.k3s_custom_registries
+      when: k3s_enabled and custom_registries
+
+- name: Setup k3s servers
+  hosts: master
+  environment: "{{ proxy_env | default({}) }}"
+  become: true
+  roles:
+    - role: techno_tim.k3s_ansible.k3s_server
+      when: k3s_enabled
+
+- name: Setup k3s agents
+  hosts: node
+  environment: "{{ proxy_env | default({}) }}"
+  become: true
+  roles:
+    - role: techno_tim.k3s_ansible.k3s_agent
+      when: k3s_enabled
+
+- name: Configure k3s cluster
+  hosts: master
+  environment: "{{ proxy_env | default({}) }}"
+  become: true
+  roles:
+    - role: techno_tim.k3s_ansible.k3s_server_post
+      when: k3s_enabled
+
+# - name: Storing kubeconfig in the playbook directory
+#   hosts: master
+#   environment: "{{ proxy_env | default({}) }}"
+#   tasks:
+#     - name: Copying kubeconfig from {{ hostvars[groups[group_name_master | default('master')][0]]['ansible_hostname'] }}
+#       ansible.builtin.fetch:
+#         src: "{{ ansible_user_dir }}/.kube/config"
+#         dest: ./kubeconfig
+#         flat: true
+#       when: ansible_hostname == hostvars[groups[group_name_master | default('master')][0]]['ansible_hostname'] and k3s_enabled
+
+- name: Retrieve K3s cluster configuration
+  hosts: localhost
+  gather_facts: no
+  vars:
+    master_ip: "{{ lookup('env', 'K3S_MASTERS') }}"
+    master_user: "{{ lookup('env', 'K3S_USERNAME') }}"
+    context: "{{ lookup('env', 'K3S_CONTEXT') }}"
+    ssh_key_path: "~/.ssh/id_rsa"
+    kube_config_path: "~/.kube/config"
+    k3s_enabled: "{{ lookup('env', 'K3S_ENABLED') | bool }}"
+  tasks:
+    - name: Ensure .kube directory exists locally
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      when: k3s_enabled
+
+    - name: Ensure kube config file exists locally
+      ansible.builtin.file:
+        path: "{{ kube_config_path }}"
+        state: touch
+      delegate_to: localhost
+      when: k3s_enabled
+
+    - name: Retrieve K3s cluster configuration from master
+      ansible.builtin.command:
+        cmd: "k3sup install --user {{ master_user }} --skip-install --host {{ master_ip }} --context {{ context }} --local-path {{ kube_config_path }} "
+      when: k3s_enabled
+
+
+
+
+# - name: Homelab localhost Setup normal privledges
+#   hosts: localhost
+#   gather_facts: true
+#   # tasks:
+#   # - name: Homelab Printing all the environment​ variables in Ansible
+#   #   debug:
+#   #     msg: "{{ ansible_env }}"
+    
+#   roles:
+#     - role: k3s-clone
+#       become: true
+#       when: lookup('env', 'K3S_ENABLED') == 'true'
+
+    # - role: transmission
+    #   become: false
+    #   when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
+    # - role: jackett
+    #   when: lookup('env', 'JACKETT_ENABLED') == 'true'
+    # - role: radarr
+    #   when: lookup('env', 'RADARR_ENABLED') == 'true'
+    # - role: sonarr
+    #   when: lookup('env', 'SONARR_ENABLED') == 'true'      
 

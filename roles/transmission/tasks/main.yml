@@ -11,4 +11,8 @@
 - name: Check if Namespace Exists
   include_tasks: create_namespace.yml
  
-  
+- name: Persistant volume claim
+  include_tasks: transmission_pvc.yml
+
+- name: Transmission container
+  include_tasks: transmission_container.yml
