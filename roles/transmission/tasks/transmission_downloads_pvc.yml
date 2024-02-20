@@ -1,0 +1,38 @@
+---
+- name: Create Persistent Volume for Downloads
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: transmission-downloads-pv
+      spec:
+        capacity:
+          storage: "100Gi" # Adjust size as needed
+        accessModes:
+          - ReadWriteMany
+        nfs:
+          path: "{{ transmission_downloads }}"
+          server: "{{ transmission_storage_nfs_server_ip }}"
+        storageClassName: nfs
+        persistentVolumeReclaimPolicy: Retain
+
+- name: Create PVC for Downloads
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: transmission-downloads-claim
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: "100Gi"
+        storageClassName: nfs
+        volumeName: "transmission-downloads-pv"

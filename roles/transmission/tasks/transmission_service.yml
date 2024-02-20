@@ -1,0 +1,18 @@
+- name: Create a Service for Transmission
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Service
+#    namespace: mediamaven
+    name: transmission-service
+    definition:
+      metadata:
+        name: transmission-service
+        namespace: mediamaven
+      spec:
+        selector:
+          app: transmission
+        ports:
+          - name: web
+            port: 80
+            targetPort: 80
+        type: LoadBalancer

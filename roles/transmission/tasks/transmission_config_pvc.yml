@@ -1,0 +1,38 @@
+- name: Create Persistent Volume for Config
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: transmission-config-pv
+      spec:
+        capacity:
+          storage: "2Gi" # Adjust size as needed
+        accessModes:
+          - ReadWriteMany
+        nfs:
+          path: "{{ transmission_config }}"
+          server: "{{ transmission_storage_nfs_server_ip }}"
+        storageClassName: nfs
+        persistentVolumeReclaimPolicy: Retain
+
+- name: Create PVC for Config
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: transmission-config-claim
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: "2Gi"
+        storageClassName: nfs
+        volumeName: "transmission-config-pv"
+

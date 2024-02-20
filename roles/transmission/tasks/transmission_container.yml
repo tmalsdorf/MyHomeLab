@@ -24,6 +24,7 @@
             - name: transmission
               image: "{{ transmission_image }}"
               ports:
+                - containerPort: 80
                 - containerPort: 9091
                 - containerPort: 51413
                 # Ensure the UDP port is correctly specified
@@ -49,7 +50,7 @@
             volumes:
               - name: config
                 persistentVolumeClaim:
-                  claimName: transmission-config-pvc
+                  claimName: 	transmission-config-claim 
               - name: downloads
                 persistentVolumeClaim:
-                  claimName: transmission-downloads-pvc
+                  claimName: transmission-downloads-claim

@@ -2,10 +2,10 @@
 - name: Homelab localhost Setup elevated privledges
   hosts: localhost
   gather_facts: true
-  # tasks:
-  # - name: Homelab Printing all the environment​ variables in Ansible
-  #   debug:
-  #     msg: "{{ ansible_env }}"
+  tasks:
+   - name: Homelab Printing all the environment​ variables in Ansible
+     debug:
+       msg: "{{ ansible_env }}"
   roles:
     - role: prereq
       become: true
@@ -72,17 +72,6 @@
     - role: techno_tim.k3s_ansible.k3s_server_post
       when: k3s_enabled
 
-# - name: Storing kubeconfig in the playbook directory
-#   hosts: master
-#   environment: "{{ proxy_env | default({}) }}"
-#   tasks:
-#     - name: Copying kubeconfig from {{ hostvars[groups[group_name_master | default('master')][0]]['ansible_hostname'] }}
-#       ansible.builtin.fetch:
-#         src: "{{ ansible_user_dir }}/.kube/config"
-#         dest: ./kubeconfig
-#         flat: true
-#       when: ansible_hostname == hostvars[groups[group_name_master | default('master')][0]]['ansible_hostname'] and k3s_enabled
-
 - name: Retrieve K3s cluster configuration
   hosts: localhost
   gather_facts: no
@@ -114,8 +103,14 @@
         cmd: "k3sup install --user {{ master_user }} --skip-install --host {{ master_ip }} --context {{ context }} --local-path {{ kube_config_path }} "
       when: k3s_enabled
 
-
-
+- name: deploy transmission if enabled
+  hosts: localhost
+  gather_facts: true
+  roles: 
+    - role: transmission
+      when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
+  tags:
+    - deploy_transmission
 
 # - name: Homelab localhost Setup normal privledges
 #   hosts: localhost

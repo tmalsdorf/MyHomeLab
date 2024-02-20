@@ -1,18 +1,36 @@
 ---
+
+- name: Show Python interpreter used by Ansible
+  command: which python3
+  register: python_interpreter
+
+- name: Debug Python interpreter
+  debug:
+    msg: "Ansible is using Python interpreter at {{ python_interpreter.stdout }}"
+
 # - name: Printing all the environment​ variables in Ansible transmission
 #   debug:
 #     msg: "{{ ansible_env }}"
 #     #msg: "{{ lookup('env','MYGLOBAL','HOME','SHELL') }}"
 
-- name: 44 Debug transmission_namespace variable
-  debug:
-    var: transmission_namespace 
+# - name: 44 Debug transmission_namespace variable
+#   debug:
+#     var: transmission_namespace 
 
 - name: Check if Namespace Exists
   include_tasks: create_namespace.yml
  
+- name: Persistant volume claim config
+  include_tasks: transmission_config_pvc.yml
+
 - name: Persistant volume claim
-  include_tasks: transmission_pvc.yml
+  include_tasks: transmission_downloads_pvc.yml
+
+- name: Transmission service
+  include_tasks: transmission_service.yml
+
+- name: Transmission ingress
+  include_tasks: transmission_ingress.yml
 
 - name: Transmission container
   include_tasks: transmission_container.yml

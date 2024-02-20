@@ -1,0 +1,23 @@
+- name: Create an Ingress for Transmission Service
+  kubernetes.core.k8s:
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    namespace: mediamaven
+    name: transmission-ingress
+    definition:
+      metadata:
+        name: transmission-ingress
+        namespace: mediamaven
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: /
+      spec:
+        rules:
+        - http:
+            paths:
+            - path: /transmission
+              pathType: Prefix
+              backend:
+                service:
+                  name: transmission-service
+                  port:
+                    number: 80
