@@ -18,6 +18,6 @@
               pathType: Prefix
               backend:
                 service:
-                  name: transmission-service
+                  name: transmission
                   port:
-                    number: 80
+                    number: 9091

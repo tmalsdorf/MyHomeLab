@@ -2,17 +2,17 @@
   kubernetes.core.k8s:
     api_version: v1
     kind: Service
-#    namespace: mediamaven
-    name: transmission-service
+    namespace: mediamaven
+#    name: transmission
     definition:
       metadata:
-        name: transmission-service
+        name: transmission
         namespace: mediamaven
       spec:
         selector:
           app: transmission
         ports:
           - name: web
-            port: 80
-            targetPort: 80
+            port: 9091
+            targetPort: 9091
         type: LoadBalancer

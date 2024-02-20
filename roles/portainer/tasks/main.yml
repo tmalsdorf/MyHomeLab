@@ -1,0 +1,15 @@
+---
+# - name: Portainer agent Printing all the environment variables in Ansible
+#   debug:
+#     msg: "{{ ansible_env }}"
+
+- name: Download Portainer Agent Kubernetes YAML
+  ansible.builtin.get_url:
+    url: https://downloads.portainer.io/ce2-19/portainer-agent-k8s-lb.yaml
+    dest: "/tmp/portainer-agent-k8s-lb.yaml"
+    mode: '0444'
+
+- name: Apply Portainer Agent Manifest
+  kubernetes.core.k8s:
+    state: present
+    src: "/tmp/portainer-agent-k8s-lb.yaml"

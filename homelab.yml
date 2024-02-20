@@ -2,10 +2,10 @@
 - name: Homelab localhost Setup elevated privledges
   hosts: localhost
   gather_facts: true
-  tasks:
-   - name: Homelab Printing all the environment​ variables in Ansible
-     debug:
-       msg: "{{ ansible_env }}"
+  # tasks:
+  #   - name: Homelab Printing all the environment​ variables in Ansible
+  #     debug:
+  #       msg: "{{ ansible_env }}"
   roles:
     - role: prereq
       become: true
@@ -111,6 +111,15 @@
       when: lookup('env', 'TRANSMISSION_ENABLED') == 'true'
   tags:
     - deploy_transmission
+
+- name: deploy portainer if enabled
+  hosts: localhost
+  #gather_facts: true
+  roles: 
+    - role: portainer
+      when: lookup('env', 'PORTAINER_ENABLED') == 'true'
+  tags:
+    - deploy_portainer
 
 # - name: Homelab localhost Setup normal privledges
 #   hosts: localhost

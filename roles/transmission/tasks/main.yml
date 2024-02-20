@@ -23,14 +23,17 @@
 - name: Persistant volume claim config
   include_tasks: transmission_config_pvc.yml
 
-- name: Persistant volume claim
+- name: Persistant volume claim downloads
   include_tasks: transmission_downloads_pvc.yml
+
+- name: Persistent volume claim watch
+  include_tasks: transmission_watch_pvc.yml
 
 - name: Transmission service
   include_tasks: transmission_service.yml
 
-- name: Transmission ingress
-  include_tasks: transmission_ingress.yml
+# - name: Transmission ingress
+#   include_tasks: transmission_ingress.yml
 
 - name: Transmission container
   include_tasks: transmission_container.yml

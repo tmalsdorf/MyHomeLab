@@ -1,0 +1,38 @@
+- name: Create Persistent Volume for watch
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: transmission-watch-pv
+      spec:
+        capacity:
+          storage: "2Gi" # Adjust size as needed
+        accessModes:
+          - ReadWriteMany
+        nfs:
+          path: "{{ transmission_watch }}"
+          server: "{{ transmission_storage_nfs_server_ip }}"
+        storageClassName: nfs
+        persistentVolumeReclaimPolicy: Retain
+
+- name: Create PVC for watch
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    resource_definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: transmission-watch-claim
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: "2Gi"
+        storageClassName: nfs
+        volumeName: "transmission-watch-pv"
+
