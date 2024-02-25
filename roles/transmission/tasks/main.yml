@@ -26,8 +26,8 @@
 - name: Persistant volume claim downloads
   include_tasks: transmission_downloads_pvc.yml
 
-- name: Persistent volume claim watch
-  include_tasks: transmission_watch_pvc.yml
+# - name: Persistent volume claim watch
+#   include_tasks: transmission_watch_pvc.yml
 
 - name: Transmission service
   include_tasks: transmission_service.yml

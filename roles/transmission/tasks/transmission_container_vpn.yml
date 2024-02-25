@@ -1,0 +1,85 @@
+- name: Deploy Transmission
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ transmission_namespace }}"
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: transmission
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: transmission
+        template:
+          metadata:
+            labels:
+              app: transmission
+          spec:
+            securityContext:
+              runAsUser: 1026
+              runAsGroup: 1026
+            containers:
+            - name: transmission
+              image: "{{ transmission_image }}"
+              ports:
+#                - containerPort: 9091
+#                - containerPort: 51413
+                # Ensure the UDP port is correctly specified
+#                - name: udp-port
+#                  containerPort: 51413
+#                  protocol: UDP
+              env:
+                - name: OPENVPN_PROVIDER
+                  value: "{{ transmission_openvpn_provider }}"
+                - name: OPENVPN_CONFIG
+                  value: "{{ transmission_openvpn_config }}"
+                - name: OPENVPN_USERNAME
+                  value: "{{ transmission_openvpn_username }}"
+                - name: OPENVPN_PASSWORD
+                  value: "{{ transmission_openvpn_password }}"
+                - name: OPENVPN_OPTIONS
+                  value: "{{ transmission_openvpn_options }}"
+                - name: TRANSMISSION_WEB_UI
+                  value: "{{ transmission_web_ui }}"    
+                - name: PUID
+                  value: "{{ transmission_puid }}"
+                - name: PGID
+                  value: "{{ transmission_pgid }}"
+                - name: TZ
+                  value: "{{ transmission_tz }}"
+                - name: LOCAL_NETWORK
+                  value: "{{ transmission_local_network }}"
+                #   value: "{{ transmission_tz }}"
+                # - name: USER
+                #   value: "{{ transmission_user }}"
+                # - name: PASS
+                #   value: "{{ transmission_password }}"
+              volumeMounts:
+                - name: config
+                  mountPath: "/config"
+                - name: downloads
+                  mountPath: "/data"
+                # - name: watch  
+                #   mountPath: "/watch"
+                # - name: "dev-tun"
+                #   mountPath: "/dev/net/tun" # Needed for VPN
+              securityContext:
+                capabilities:
+                  add: ["NET_ADMIN"]
+                privileged: true
+            volumes:
+              - name: config
+                persistentVolumeClaim:
+                  claimName: transmission-config-claim 
+              - name: downloads
+                persistentVolumeClaim:
+                  claimName: transmission-downloads-claim
+              # - name: watch
+              #   persistentVolumeClaim:
+              #     claimName: transmission-watch-claim
+              - name: "dev-tun"
+                hostPath:
+                  path: "/dev/net/tun"
+                      

@@ -22,7 +22,7 @@
               runAsGroup: 1026
             containers:
             - name: transmission
-              image: "{{ transmission_image }}"
+              image: lscr.io/linuxserver/transmission:latest
               ports:
                 - containerPort: 9091
                 - containerPort: 51413
@@ -37,28 +37,15 @@
                   value: "{{ transmission_pgid }}"
                 - name: TZ
                   value: "{{ transmission_tz }}"
-                - name: USER
-                  value: "{{ transmission_user }}"
-                - name: PASS
-                  value: "{{ transmission_password }}"
               volumeMounts:
                 - name: config
                   mountPath: "/config"
                 - name: downloads
-                  mountPath: "/downloads"
-                - name: watch  
-                  mountPath: "/watch"
-              securityContext:
-                capabilities:
-                  add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "KILL", "SETGID", "SETUID"]
+                  mountPath: "/data"
             volumes:
               - name: config
                 persistentVolumeClaim:
-                  claimName: 	transmission-config-claim 
+                  claimName: transmission-config-claim 
               - name: downloads
                 persistentVolumeClaim:
                   claimName: transmission-downloads-claim
-              - name: watch
-                persistentVolumeClaim:
-                  claimName: transmission-watch-claim
-                      

@@ -40,7 +40,15 @@ add_section_if_not_exists() {
 
 # Source the .env file if it exists
 if [ -f .env ]; then
-    source .env
+    while IFS= read -r line; do
+      # Trim leading and trailing whitespace
+      line=$(echo "$line" | sed 's/^[ \t]*//;s/[ \t]*$//')
+      # Skip empty lines and lines starting with #
+      if [[ "$line" && "${line:0:1}" != "#" ]]; then
+        # Remove inline comments and export
+        export "$(echo "$line" | cut -d'#' -f1 | sed 's/^[ \t]*//;s/[ \t]*$//')"
+      fi
+    done < .env
     echo ".env file exists and sourced."
 else
     echo ".env file does not exist. Creating from example..."
