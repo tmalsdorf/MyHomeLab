@@ -38,6 +38,57 @@ add_section_if_not_exists() {
     fi
 }
 
+# Function to check and enable passwordless SSH
+enable_ssh_access() {
+  local host=$1
+
+  echo "Checking SSH access for $ANSIBLE_USER on $host..."
+  
+  sshpass -p "$SSH_PASSWORD" ssh -o BatchMode=yes -o ConnectTimeout=5 "$ANSIBLE_USER@$host" 'exit' 2>/dev/null
+
+  if [ $? -ne 0 ]; then
+    echo "Passwordless SSH not enabled on $host. Enabling now..."
+
+    # Copy the SSH key to the remote host
+    sshpass -p "$SSH_PASSWORD" ssh-copy-id "$ANSIBLE_USER@$host"
+
+    if [ $? -ne 0 ];then
+        echo "Failed to enable passwordless SSH on $host."
+        return 1
+    else
+        echo "Passwordless SSH enabled successfully on $host."
+    fi
+  else
+    echo "Passwordless SSH already enabled on $host."
+  fi
+}
+
+# Function to check and enable passwordless sudo
+enable_sudo_access() {
+  local host=$1
+
+  echo "Checking passwordless sudo access for $ANSIBLE_USER on $host..."
+  
+  ssh "$ANSIBLE_USER@$host" "echo '$SUDO_PASSWORD' | sudo -S -n true" 2>/dev/null
+
+  if [ $? -ne 0 ]; then
+    echo "Passwordless sudo not enabled on $host. Enabling now..."
+    
+    local sudo_file="/etc/sudoers.d/010-$ANSIBLE_USER-nopassword"
+    ssh "$ANSIBLE_USER@$host" "echo '$SUDO_PASSWORD' | sudo -S bash -c 'echo \"$ANSIBLE_USER ALL=(ALL) NOPASSWD: ALL\" > $sudo_file'"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to enable passwordless sudo on $host."
+        return 1
+    else
+        echo "Passwordless sudo enabled successfully on $host."
+    fi
+
+  else
+    echo "Passwordless sudo already enabled on $host."
+  fi
+}
+
 # Source the .env file if it exists
 if [ -f .env ]; then
     while IFS= read -r line; do
@@ -87,11 +138,6 @@ source venv/bin/activate
 ## install requirements
 echo "Installing requirements..."
 pip install -r requirements.txt
-
-# echo "Initializing localhost..."
-# if [ "${K3S_ENABLED}" == "true" ]; then
-#   ansible-galaxy collection install kubernetes.core
-# fi
 
 # Check and create ANSIBLE_INVENTORY_PATH directory if it doesn't exist
 echo "Checking and creating ANSIBLE_INVENTORY_PATH directory..."
@@ -143,4 +189,28 @@ echo "Updating Ansible User in Group Vars..."
 sed -i "s/{{ ansible_user }}/${ANSIBLE_USER}/g" "${ANSIBLE_INVENTORY_PATH}/group_vars/all.yml"
 echo "Ansible User updated in Group Vars."
 
+# Prompt the user for SSH and sudo passwords
+read -sp "Enter SSH password for $ANSIBLE_USER: " SSH_PASSWORD
+echo
+read -sp "Enter sudo password for $ANSIBLE_USER: " SUDO_PASSWORD
+echo
+
+# Extract the hosts from the [master] and [node] sections
+hosts=$(sed -n '/^\[master\]/,/^\[/p;/^\[node\]/,/^\[/p' "$ANSIBLE_INVENTORY_PATH/$ANSIBLE_INVENTORY_FILE" | grep -E '^\s*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | awk '{print $1}')
+
+# Iterate through the extracted hosts
+for host in $hosts; do
+  enable_ssh_access "$host"
+  enable_sudo_access "$host"
+done
+
 ansible-playbook homelab.yml
+
+sleep 30
+
+kubectl get namespaces
+kubectl get nodes
+kubectl get all --namespace argocd|grep argocd-server
+echo "Argocd admin password "
+kubectl get secret argocd-initial-admin-secret  --namespace argocd -o yaml|grep password| cut -d' ' -f4|base64 -d
+echo ""

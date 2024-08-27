@@ -1,7 +1,8 @@
-# # read the env file and decode it
+---
+# read the env file and decode it
 # - name: Read .env file
 #   ansible.builtin.slurp:
-#     src: ".env"
+#     src: "../../.env"
 #   register: env_file_content
 
 # - name: Decode .env file content
@@ -26,8 +27,8 @@
 - name: Include sudoers tasks
   include_tasks: sudoer.yml
 
-# - name: Include copy hostnames tasks
-#   include_tasks: copy_hostnames.yml
+- name: Include copy hostnames tasks
+  include_tasks: copy_hostnames.yml
 
 - name: Include install packages tasks
   include_tasks: install_packages.yml
