@@ -1,0 +1,7 @@
+---
+- name: Install packages
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+    state: present
+    update_cache: yes  # Update the repository cache before the install

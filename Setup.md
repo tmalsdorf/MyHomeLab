@@ -16,8 +16,6 @@ cp example.env .env
 ## install requirements
 pip install -r requirements.txt
 
-## Clone K3s Ansible Repo
-git clone https://github.com/techno-tim/k3s-ansible.git
 
-
+setup.sh
 

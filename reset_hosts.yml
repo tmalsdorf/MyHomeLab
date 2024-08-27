@@ -1,0 +1,17 @@
+---
+- name: Reset the /etc/hosts file
+  hosts: all
+  become: yes  # Requires administrative privileges
+  tasks:
+    - name: Set /etc/hosts file content
+      copy:
+        dest: /etc/hosts
+        content: |
+          127.0.0.1       localhost
+          ::1             localhost ip6-localhost ip6-loopback
+          ff02::1         ip6-allnodes
+          ff02::2         ip6-allrouters
+          127.0.1.1       {{ ansible_hostname }}
+        owner: root
+        group: root
+        mode: '0644'
