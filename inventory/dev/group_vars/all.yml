@@ -1,0 +1,34 @@
+---
+# Dev Environment - Global Variables
+# ==================================
+
+# Environment identification
+environment: dev
+env_name: "Development"
+
+# K3s settings for dev
+k3s_version: v1.27.4+k3s1
+k3s_release_channel: stable
+k3s_state: present
+k3s_build_cluster: true
+proxmox_lxc_configure: false
+
+# System settings
+system_timezone: "America/Chicago"
+ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+
+# Development flags (more permissive)
+debug_mode: true
+skip_verification: false
+
+# ArgoCD settings for dev
+argocd_namespace: argocd
+argocd_server_host: "argocd-dev.local"
+
+# Portainer settings for dev
+portainer_port: 9000
+
+# Network settings for dev (typically more open)
+firewall_enabled: false

@@ -1,0 +1,56 @@
+---
+# Production Environment - Global Variables
+# ==========================================
+# WARNING: Changes here affect PRODUCTION systems
+
+# Environment identification
+environment: prod
+env_name: "Production"
+
+# K3s settings for Production
+k3s_version: v1.27.4+k3s1
+k3s_release_channel: stable
+k3s_state: present
+k3s_build_cluster: true
+proxmox_lxc_configure: false
+
+# System settings
+system_timezone: "America/Chicago"
+ntp_servers:
+  - time.google.com
+  - time.cloudflare.com
+
+# Production flags (strict)
+debug_mode: false
+skip_verification: false
+
+# ArgoCD settings for Production
+argocd_namespace: argocd
+argocd_server_host: "argocd.example.com"  # Update with your domain
+
+# Portainer settings for Production
+portainer_port: 9000
+
+# Network settings for Production (strict security)
+firewall_enabled: true
+firewall_default_policy: DROP
+firewall_allowed_ports:
+  - 22      # SSH (consider restricting to bastion/jump host)
+  - 80      # HTTP
+  - 443     # HTTPS
+  - 6443    # K3s API (restrict to admin/management networks)
+  - 2379    # etcd (internal only)
+  - 2380    # etcd peer (internal only)
+  - 10250   # Kubelet (internal only)
+  - 8472    # Flannel VXLAN (internal only)
+  - 30000-32767  # NodePort range
+
+# Security hardening for production
+security_hardening: true
+fail2ban_enabled: true
+automatic_updates: true
+backup_enabled: true
+
+# Monitoring and alerting
+monitoring_enabled: true
+alerting_enabled: true

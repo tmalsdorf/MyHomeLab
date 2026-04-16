@@ -1,0 +1,32 @@
+[defaults]
+; Dynamic inventory based on environment variable
+inventory = inventory/${ENVIRONMENT}/hosts.ini
+
+; Security settings
+host_key_checking = False
+deprecation_warnings = False
+
+; Performance settings
+forks = 20
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = /tmp/ansible_facts
+fact_caching_timeout = 86400
+retry_files_enabled = False
+
+; Paths
+roles_path = roles:collections/roles
+collections_paths = collections:./collections
+
+; Callback plugins
+stdout_callback = yaml
+callback_whitelist = profile_tasks, timer
+
+; SSH settings
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=60
+pipelining = True
+
+; Privilege escalation
+[privilege_escalation]
+become = False

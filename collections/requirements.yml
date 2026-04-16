@@ -1,8 +1,13 @@
 collections:
   - name: ansible.utils
+    version: ">=3.0.0"
   - name: community.general
+    version: ">=8.0.0"
   - name: ansible.posix
+    version: ">=1.5.0"
   - name: kubernetes.core
+    version: ">=3.0.0"
+  # Pin to a specific commit for reproducibility; update periodically
   - name: https://github.com/techno-tim/k3s-ansible.git
     type: git
-    version: master
+    version: v1.28.0

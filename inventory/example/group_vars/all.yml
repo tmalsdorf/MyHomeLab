@@ -1,0 +1,38 @@
+---
+# Example Environment Variables
+# =============================
+# Copy this template to inventory/dev/, inventory/uat/, or inventory/prod/group_vars/
+# and customize for your specific environment
+
+# Environment identification
+environment: example
+env_name: "Example"
+
+# K3s settings
+k3s_version: v1.27.4+k3s1
+k3s_release_channel: stable
+k3s_state: present
+k3s_build_cluster: true
+proxmox_lxc_configure: false
+
+# System settings
+system_timezone: "America/Chicago"
+ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+
+# Debug settings
+debug_mode: false
+skip_verification: false
+
+# ArgoCD settings
+argocd_namespace: argocd
+argocd_server_host: "argocd.local"
+
+# Portainer settings
+portainer_port: 9000
+
+# Network settings
+firewall_enabled: false
+
+# Add your custom variables below...
