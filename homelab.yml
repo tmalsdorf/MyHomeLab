@@ -56,6 +56,8 @@
       when: k3s_enabled
     - role: techno_tim.k3s_ansible.k3s_custom_registries
       when: k3s_enabled and custom_registries
+  tags:
+    - deploy_k3s_nodes
 
 - name: Setup k3s servers
   hosts: master
@@ -72,6 +74,9 @@
   roles:
     - role: techno_tim.k3s_ansible.k3s_agent
       when: k3s_enabled
+  tags:
+    - deploy_k3s_agents
+
 
 - name: Configure k3s cluster
   hosts: master
@@ -80,6 +85,8 @@
   roles:
     - role: techno_tim.k3s_ansible.k3s_server_post
       when: k3s_enabled
+  tags:
+    - deploy_k3s_cluster
 
 - name: Retrieve K3s cluster configuration
   hosts: localhost
@@ -120,6 +127,12 @@
       ansible.builtin.command:
         cmd: "k3sup install --user {{ master_user }} --skip-install --host {{ master_ip }} --context {{ context }} --local-path {{ kube_config_path }} "
       when: k3s_enabled
+
+- name: Install cert-manager
+  hosts: k3s_cluster
+  roles:
+    - k3s
+    - cert_manager
 
 - name: Configure argocd
   hosts: localhost

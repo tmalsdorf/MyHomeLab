@@ -1,0 +1,35 @@
+# Disable Bluetooth in /boot/config.txt
+- name: Add Bluetooth disable line to /boot/config.txt
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    line: "dtoverlay=disable-bt"
+    state: present
+
+# Disable Wi-Fi in /boot/config.txt
+- name: Add Wi-Fi disable line to /boot/config.txt
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    line: "dtoverlay=disable-wifi"
+    state: present
+
+# Disable the Bluetooth service
+- name: Disable hciuart service (Bluetooth)
+  ansible.builtin.systemd:
+    name: hciuart
+    enabled: no
+    state: stopped
+
+# Reboot the Pi to apply changes
+- name: Reboot Raspberry Pi
+  ansible.builtin.reboot:
+    msg: "Rebooting to apply Bluetooth and Wi-Fi changes."
+    connect_timeout: 5
+    reboot_timeout: 300
+
+# Set video memory to the lowest (16MB)
+- name: Set video memory to 16MB in /boot/config.txt
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    regexp: "^gpu_mem="
+    line: "gpu_mem=16"
+    state: present

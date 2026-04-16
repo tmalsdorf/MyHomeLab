@@ -1,0 +1,6 @@
+---
+cert_manager:
+  email: "{{ letsencrypt_email }}"  # Set this in your .env or inventory
+  domains: 
+    - "{{ primary_domain }}"
+    - "*.{{ primary_domain }}"
