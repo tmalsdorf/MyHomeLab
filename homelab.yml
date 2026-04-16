@@ -60,6 +60,8 @@
       when: k3s_enabled
     - role: techno_tim.k3s_ansible.k3s_custom_registries
       when: k3s_enabled and custom_registries
+  tags:
+    - deploy_k3s_nodes
 
 - name: Setup k3s servers
   hosts: master
@@ -76,6 +78,9 @@
   roles:
     - role: techno_tim.k3s_ansible.k3s_agent
       when: k3s_enabled
+  tags:
+    - deploy_k3s_agents
+
 
 - name: Configure k3s cluster
   hosts: master
@@ -84,6 +89,8 @@
   roles:
     - role: techno_tim.k3s_ansible.k3s_server_post
       when: k3s_enabled
+  tags:
+    - deploy_k3s_cluster
 
 - name: Retrieve K3s cluster configuration
   hosts: localhost
