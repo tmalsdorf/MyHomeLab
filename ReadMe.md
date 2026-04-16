@@ -13,7 +13,7 @@ My HomeLab is built on a variety of hardware to support different functions, fro
 - **Network Gear**: UniFi Switches and Security Gateways for reliable and manageable network infrastructure.
 - **NAS**: Synology unit serving as centralized storage solution for backups, media, and personal files.
 - **Raspberry Pi's**: Used for lightweight computing tasks, IoT projects, and as kubernetes hosts.
-- **Dell Optiplexes**: Used kubernetes hosts.
+- **Dell Optiplexes**: Used for kubernetes hosts.
 - **Dell Precision**: High-performance workstation for intensive computing tasks, virtualization, and AI projects.
 
 ## Infrastructure Software

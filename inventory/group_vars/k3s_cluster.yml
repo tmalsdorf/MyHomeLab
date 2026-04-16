@@ -1,0 +1,32 @@
+---
+# K3s cluster specific variables
+# ================================
+# These variables are applied to all K3s hosts (master and node groups)
+
+# K3s version - pinned for reproducibility
+k3s_version: v1.28.5+k3s1
+k3s_release_channel: stable
+
+# K3s configuration
+k3s_install_hard_links: true
+systemd_dir: /etc/systemd/system
+
+# Server (master) specific args
+extra_server_args: >-
+  --disable=traefik
+  --node-taint CriticalAddonsOnly=true:NoExecute
+  --kube-apiserver-arg="enable-admission-plugins=NodeRestriction"
+
+# Agent (worker) specific args
+extra_agent_args: ""
+
+# Registry configuration (optional)
+custom_registries: false
+# registries_config:
+#   mirrors:
+#     "docker.io":
+#       endpoint:
+#         - "https://mirror.gcr.io"
+
+# Air-gap support (optional)
+airgap_mode: false

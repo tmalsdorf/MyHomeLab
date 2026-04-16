@@ -1,0 +1,21 @@
+---
+# Ansible Lint Configuration
+# https://ansible.readthedocs.io/projects/lint/
+
+exclude_paths:
+  - .cache/
+  - .git/
+  - venv/
+  - k3s-ansible/
+
+skip_list:
+  - yaml[line-length]  # Allow longer lines
+  - name[template]     # Allow Jinja2 in task names
+
+warn_list:
+  - experimental
+
+parseable: true
+quiet: false
+strict: false
+verbosity: 1

@@ -128,10 +128,17 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# Ansible configuration (user-specific, keep ignored)
 ansible.cfg
-inventory/
-DevelopmentDocs/
 
+# Inventory files with sensitive data
+# NOTE: hosts.ini files contain sensitive IPs - add to .gitignore manually if needed
+inventory/*/host_vars/
+
+# Allow inventory group_vars templates
+!inventory/example/group_vars/*.yml
+
+DevelopmentDocs/
 
 # Spyder project settings
 .spyderproject
