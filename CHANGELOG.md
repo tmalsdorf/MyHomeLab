@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `meta/main.yml` for ArgoCD role
 
 ### Changed
-- `example.env` restructured with per-environment K3s configuration sections
+- `example.env` completely restructured with clear sections (REQUIRED, Optional, etc.)
+- `Setup.md` rewritten with clearer 3-step workflow and copy-paste examples
+- Simplified environment variable names (removed redundant K3S_CONTEXT_*)
+- Made `PORTAINER_ENABLED` and `ARGO_PASSWORD` available in .env
 - `setup.sh` now supports both single-environment and all-environments modes
 - Simplified inventory files by moving common vars to `group_vars/`
 - Fixed typo in `homelab.yml` ("privledges" → "privileges")
