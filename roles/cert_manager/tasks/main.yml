@@ -1,0 +1,34 @@
+---
+- name: Install Cert-Manager on Kubernetes Cluster
+  block:
+    - name: Check if Cert-Manager is already installed
+      kubernetes:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: cert-manager
+      register: cert_manager_namespace
+      ignore_errors: true
+
+    - name: Install Cert-Manager CRDs and Deployment
+      kubernetes:
+        definition: "{{ lookup('url', 'https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml', split_lines=false) }}"
+      when: cert_manager_namespace is failed
+
+    - name: Wait for Cert-Manager to be ready
+      kubernetes:
+        api_version: apps/v1
+        kind: Deployment
+        name: cert-manager
+        namespace: cert-manager
+        wait: true
+        wait_timeout: 300
+
+- name: Create Let's Encrypt ClusterIssuer
+  kubernetes:
+    definition: "{{ lookup('template', 'cluster_issuer.yml.j2') }}"
+
+- name: Create Example Certificate
+  kubernetes:
+    definition: "{{ lookup('template', 'certificate.yml.j2') }}"

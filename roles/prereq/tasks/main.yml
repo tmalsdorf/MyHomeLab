@@ -33,6 +33,9 @@
 - name: Include install packages tasks
   include_tasks: install_packages.yml
 
+- name: Include disable not needed services tasks
+  include_tasks: disable_services.yml 
+
 # - name: Printing all the environment​ variables in Ansible prereq
 #   debug:
 #     msg: "{{ ansible_env }}"

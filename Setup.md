@@ -19,3 +19,8 @@ pip install -r requirements.txt
 
 setup.sh
 
+
+# Test your cluster with:
+export KUBECONFIG=/home/K3S_USERNAME/.kube/config
+kubectl config use-context K3S_CONTEXT
+kubectl get node -o wide

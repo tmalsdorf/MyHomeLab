@@ -125,6 +125,12 @@
         cmd: "k3sup install --user {{ master_user }} --skip-install --host {{ master_ip }} --context {{ context }} --local-path {{ kube_config_path }} "
       when: k3s_enabled
 
+- name: Install cert-manager
+  hosts: k3s_cluster
+  roles:
+    - k3s
+    - cert_manager
+
 - name: Configure argocd
   hosts: localhost
   vars:

@@ -162,3 +162,5 @@ k3s-ansible/
 k3sup/
 k3sup
 kubeconfig
+/NotAutomatedYet
+.vscode/
