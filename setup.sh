@@ -99,7 +99,7 @@ run_playbook_for_env() {
     
     # Production confirmation
     if [ "${env_name}" == "prod" ]; then
-        echo "⚠️  WARNING: You are targeting PRODUCTION environment!"
+        echo "WARNING: You are targeting PRODUCTION environment!"
         read -p "Are you sure you want to continue? (yes/no): " confirm
         if [ "$confirm" != "yes" ]; then
             echo "Skipping production deployment."
