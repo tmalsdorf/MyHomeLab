@@ -1,0 +1,68 @@
+---
+- name: Install workstation management tools
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  become: true
+  roles:
+    - role: k3s
+
+- name: Fetch kubeconfig from K3s master
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    master_ip: "{{ lookup('env', 'K3S_MASTERS') }}"
+    master_user: "{{ lookup('env', 'K3S_USERNAME') }}"
+    context: "{{ lookup('env', 'K3S_CONTEXT') }}"
+    ssh_key_path: "{{ lookup('env', 'SSH_KEY_FILE') | default(ansible_env.HOME + '/.ssh/id_rsa', true) }}"
+    kube_config_path: "{{ ansible_env.HOME }}/.kube/config"
+    k3s_enabled: "{{ lookup('env', 'K3S_ENABLED') | bool }}"
+  tasks:
+    - name: Ensure .kube directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+        mode: '0755'
+      when: k3s_enabled
+
+    - name: Ensure kubeconfig file exists
+      ansible.builtin.file:
+        path: "{{ kube_config_path }}"
+        state: touch
+        mode: '0600'
+      when: k3s_enabled
+
+    - name: Check if context already exists
+      ansible.builtin.shell: kubectl config get-contexts -o name 2>/dev/null | grep -w {{ context }}
+      register: context_check
+      ignore_errors: true
+      changed_when: false
+      when: k3s_enabled
+
+    - name: Remove stale context if it exists
+      ansible.builtin.shell: kubectl config delete-context {{ context }}
+      when: k3s_enabled and context_check.rc == 0
+
+    - name: Fetch kubeconfig from master via k3sup
+      ansible.builtin.command:
+        cmd: >-
+          k3sup install
+          --user {{ master_user }}
+          --skip-install
+          --host {{ master_ip }}
+          --context {{ context }}
+          --local-path {{ kube_config_path }}
+          --ssh-key {{ ssh_key_path }}
+      when: k3s_enabled
+
+    - name: Show available contexts
+      ansible.builtin.command: kubectl config get-contexts
+      register: contexts_out
+      changed_when: false
+      when: k3s_enabled
+
+    - name: Print contexts
+      ansible.builtin.debug:
+        msg: "{{ contexts_out.stdout_lines }}"
+      when: k3s_enabled
