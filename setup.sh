@@ -245,6 +245,21 @@ process_environment() {
         echo "  Inventory exists: ${inv_file}"
     fi
 
+    # Create group_vars from template if not present (idempotent)
+    local gv_dir="${inv_path}/group_vars"
+    local gv_file="${gv_dir}/all.yml"
+    if [ ! -f "${gv_file}" ]; then
+        echo "  Creating group_vars from template..."
+        run mkdir -p "${gv_dir}"
+        run cp inventory/example/group_vars/all.yml "${gv_file}"
+        if [ "${ARG_DRY_RUN}" != "true" ]; then
+            sed -i "s/^environment: example/environment: ${env_name}/" "${gv_file}"
+            sed -i "s/^env_name: \"Example\"/env_name: \"${env_name^}\"/" "${gv_file}"
+        fi
+    else
+        echo "  group_vars exists: ${gv_file}"
+    fi
+
     # Ensure [local] section is present
     local local_section="[local]\nlocalhost ansible_connection=local ansible_user=${K3S_USERNAME}"
     add_section_if_not_exists "[local]" "${local_section}" "${inv_file}"

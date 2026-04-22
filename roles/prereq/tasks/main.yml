@@ -1,4 +1,7 @@
 ---
+- name: Bootstrap python3 (raw - no Python required)
+  include_tasks: bootstrap_python.yml
+
 - name: Include SSH keys tasks
   include_tasks: sshkeys.yml
 

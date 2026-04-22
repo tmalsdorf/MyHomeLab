@@ -4,6 +4,9 @@
 # Copy this template to inventory/dev/, inventory/uat/, or inventory/prod/group_vars/
 # and customize for your specific environment
 
+# Python interpreter - explicit to avoid /usr/bin/python not found errors
+ansible_python_interpreter: /usr/bin/python3
+
 # Environment identification
 environment: example
 env_name: "Example"

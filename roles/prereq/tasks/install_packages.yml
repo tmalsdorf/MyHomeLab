@@ -1,9 +1,11 @@
 ---
-- name: Install apt-transport-https, ca-certificates, and curl
+- name: Install required packages
   ansible.builtin.apt:
     name:
+      - python3
+      - python3-apt
       - apt-transport-https
       - ca-certificates
       - curl
     state: present
-    update_cache: yes  # Update the repository cache before the install
+    update_cache: yes
