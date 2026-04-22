@@ -8,7 +8,7 @@ environment: prod
 env_name: "Production"
 
 # K3s settings for Production
-k3s_version: v1.27.4+k3s1
+k3s_version: v1.35.3+k3s1
 k3s_release_channel: stable
 k3s_state: present
 k3s_build_cluster: true
