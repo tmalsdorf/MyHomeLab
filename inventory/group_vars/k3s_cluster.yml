@@ -4,7 +4,7 @@
 # These variables are applied to all K3s hosts (master and node groups)
 
 # K3s version - pinned for reproducibility
-k3s_version: v1.28.5+k3s1
+k3s_version: v1.35.3+k3s1
 k3s_release_channel: stable
 
 # K3s configuration
