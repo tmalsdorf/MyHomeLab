@@ -13,6 +13,7 @@ set -euo pipefail
 #   -d, --skip-deps           Skip venv/pip/galaxy installation steps
 #   -t, --tags <tags>         Ansible tags to pass to ansible-playbook
 #   -f, --env-file <file>     Path to env file (default: .env)
+#   -w, --workstation         Install local tools (kubectl/helm/k3sup) and fetch kubeconfigs only
 #   -h, --help                Show this help message
 #
 # Examples:
@@ -21,6 +22,8 @@ set -euo pipefail
 #   ./setup.sh --all --skip-playbook        # Regenerate all inventories only
 #   ./setup.sh --dry-run                    # See what would happen
 #   ./setup.sh --env dev --tags k3s         # Run only k3s-tagged tasks
+#   ./setup.sh --workstation                # Set up local tools + kubeconfigs (no cluster changes)
+#   ./setup.sh --workstation --all          # Fetch kubeconfigs for all environments
 # =============================================================================
 
 # --------------------------------------------------------------------------
@@ -34,6 +37,7 @@ ARG_SKIP_PLAYBOOK=false
 ARG_SKIP_DEPS=false
 ARG_TAGS=""
 ARG_ENV_FILE=".env"
+ARG_WORKSTATION=false
 
 # --------------------------------------------------------------------------
 # Argument parsing
@@ -53,6 +57,7 @@ while [[ $# -gt 0 ]]; do
         -d|--skip-deps)     ARG_SKIP_DEPS=true; shift  ;;
         -t|--tags)          ARG_TAGS="$2";     shift 2 ;;
         -f|--env-file)      ARG_ENV_FILE="$2"; shift 2 ;;
+        -w|--workstation)   ARG_WORKSTATION=true; ARG_SKIP_PLAYBOOK=true; shift ;;
         -h|--help)          usage ;;
         *) echo "Unknown option: $1"; usage ;;
     esac
@@ -155,11 +160,29 @@ add_hosts_to_inventory() {
 }
 
 # --------------------------------------------------------------------------
+# Helper: export per-environment vars so homelab.yml env lookups resolve
+# --------------------------------------------------------------------------
+export_env_vars_for() {
+    local env_name=$1
+    local masters=$2
+    local nodes=$3
+    local enabled=$4
+
+    export K3S_ENABLED="${enabled}"
+    export K3S_MASTERS="${masters}"
+    export K3S_NODES="${nodes}"
+    export K3S_CONTEXT="${env_name}"
+    export K3S_USERNAME="${K3S_USERNAME}"
+    export SSH_KEY_FILE="${KEY_FILE:-${SSH_DIR:-$HOME/.ssh}/id_rsa}"
+}
+
+# --------------------------------------------------------------------------
 # Helper: run Ansible playbook for an environment
 # --------------------------------------------------------------------------
 run_playbook_for_env() {
     local env_name=$1
     local inventory_file=$2
+    local extra_tags="${3:-}"
 
     echo ""
     echo "Running playbook for ${env_name} using ${inventory_file}..."
@@ -175,7 +198,8 @@ run_playbook_for_env() {
     fi
 
     local playbook_args=(-i "${inventory_file}" homelab.yml)
-    [ -n "${ARG_TAGS}" ] && playbook_args+=(--tags "${ARG_TAGS}")
+    local tags_to_use="${extra_tags:-${ARG_TAGS}}"
+    [ -n "${tags_to_use}" ] && playbook_args+=(--tags "${tags_to_use}")
 
     if [ "${ARG_DRY_RUN}" == "true" ]; then
         echo "[DRY-RUN] ansible-playbook ${playbook_args[*]}"
@@ -224,6 +248,9 @@ process_environment() {
     # Ensure [local] section is present
     local local_section="[local]\nlocalhost ansible_connection=local ansible_user=${K3S_USERNAME}"
     add_section_if_not_exists "[local]" "${local_section}" "${inv_file}"
+
+    # Export per-environment vars so homelab.yml env lookups resolve correctly
+    export_env_vars_for "${env_name}" "${masters_var}" "${nodes_var}" "${enabled_var}"
 
     # Add K3s hosts if enabled
     if [ "${enabled_var}" == "true" ]; then
@@ -318,6 +345,63 @@ else
             exit 1
             ;;
     esac
+fi
+
+# --------------------------------------------------------------------------
+# Step 3: Workstation setup - install tools and fetch kubeconfigs
+# --------------------------------------------------------------------------
+if [ "${ARG_WORKSTATION}" == "true" ]; then
+    echo ""
+    echo "========================================="
+    echo "Workstation Setup"
+    echo "  Installing: kubectl, helm, k3sup"
+    echo "  Fetching kubeconfigs for enabled environments"
+    echo "========================================="
+
+    # A minimal localhost-only inventory (no remote hosts touched)
+    LOCAL_INV=$(mktemp /tmp/homelab-local-XXXXXX.ini)
+    echo -e "[local]\nlocalhost ansible_connection=local" > "${LOCAL_INV}"
+
+    # Helper: run workstation.yml for one environment
+    run_workstation_for_env() {
+        local env_name=$1
+        local masters=$2
+        local enabled=$3
+
+        if [ "${enabled}" != "true" ]; then
+            echo "  Skipping ${env_name} (K3S_ENABLED_${env_name^^}=false)"
+            return 0
+        fi
+
+        echo ""
+        echo "  Fetching kubeconfig for: ${env_name} (master: ${masters})"
+        export_env_vars_for "${env_name}" "${masters}" "" "${enabled}"
+
+        local ws_args=(-i "${LOCAL_INV}" workstation.yml)
+        if [ "${ARG_DRY_RUN}" == "true" ]; then
+            echo "  [DRY-RUN] ansible-playbook ${ws_args[*]}"
+        else
+            ansible-playbook "${ws_args[@]}"
+        fi
+    }
+
+    if [ "${SETUP_ALL_ENVIRONMENTS}" == "true" ]; then
+        run_workstation_for_env "dev"  "${K3S_MASTERS_DEV:-}"  "${K3S_ENABLED_DEV:-false}"
+        run_workstation_for_env "uat"  "${K3S_MASTERS_UAT:-}"  "${K3S_ENABLED_UAT:-false}"
+        run_workstation_for_env "prod" "${K3S_MASTERS_PROD:-}" "${K3S_ENABLED_PROD:-false}"
+    else
+        case "${ENVIRONMENT}" in
+            dev)  run_workstation_for_env "dev"  "${K3S_MASTERS_DEV:-}"  "${K3S_ENABLED_DEV:-false}" ;;
+            uat)  run_workstation_for_env "uat"  "${K3S_MASTERS_UAT:-}"  "${K3S_ENABLED_UAT:-false}" ;;
+            prod) run_workstation_for_env "prod" "${K3S_MASTERS_PROD:-}" "${K3S_ENABLED_PROD:-false}" ;;
+        esac
+    fi
+
+    rm -f "${LOCAL_INV}"
+
+    echo ""
+    echo "Kubeconfig contexts available:"
+    kubectl config get-contexts 2>/dev/null || echo "  (kubectl not yet installed or no contexts found)"
 fi
 
 echo ""

@@ -127,6 +127,59 @@ ENVIRONMENT=prod ./setup.sh
 
 ---
 
+## Managing Clusters from Your Workstation
+
+The `--workstation` flag installs local tools and fetches kubeconfigs — **it does not touch any cluster nodes**.
+
+### What it does
+
+1. Installs `kubectl`, `helm`, and `k3sup` on your local machine (via the `k3s` Ansible role)
+2. SSHs to each enabled master node using `k3sup` and merges the kubeconfig into `~/.kube/config`
+3. Creates a named context per environment (`dev`, `uat`, `prod`) so you can switch between them
+
+### Prerequisites
+
+- Your SSH key (`~/.ssh/id_rsa`) must already be on the master nodes
+- The cluster must already be deployed (`./setup.sh` without `--workstation`)
+- Python venv must be active (`source venv/bin/activate`)
+
+### Usage
+
+```bash
+# Bootstrap your workstation for a single environment
+./setup.sh --workstation --env dev
+
+# Bootstrap for all environments at once
+./setup.sh --workstation --all
+
+# See what it would do without making changes
+./setup.sh --workstation --all --dry-run
+```
+
+### Switching between environments
+
+```bash
+# List all available contexts
+kubectl config get-contexts
+
+# Switch to an environment
+kubectl config use-context dev
+kubectl config use-context uat
+kubectl config use-context prod
+
+# One-liner: run a command against a specific env without switching
+kubectl --context=prod get nodes
+```
+
+### Re-run safely
+
+`--workstation` is fully idempotent. Run it any time to:
+- Refresh a kubeconfig after cluster rebuild
+- Add a new environment context
+- Re-install tools after OS reinstall
+
+---
+
 ## Verify Your Cluster
 
 ```bash
