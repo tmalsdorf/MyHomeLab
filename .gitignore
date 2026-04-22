@@ -133,11 +133,10 @@ ansible.cfg
 
 # Inventory files with sensitive data
 # NOTE: hosts.ini files contain sensitive IPs - add to .gitignore manually if needed
-inventory/*/host_vars/
-inventory/dev/hosts.ini 
-inventory/prod/hosts.ini
+inventory/
 # Allow inventory group_vars templates
 !inventory/example/group_vars/*.yml
+!inventory/example/hosts.ini
 
 DevelopmentDocs/
 
